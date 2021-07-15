@@ -7,16 +7,29 @@ from fastapi.responses import JSONResponse
 
 from apps.api import api_app
 from apps.auth import auth_app
+
 from apps.db import add_blacklist_token
 from apps.db import init_blacklist_file
 from apps.jwt import CREDENTIALS_EXCEPTION
 from apps.jwt import get_current_user_token
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+
+from apps import schema, models
+from apps.database import SessionLocal, engine, Base, get_db
+
+Base.metadata.create_all(engine)
 
 app = FastAPI()
 app.mount('/auth', auth_app)
 app.mount('/api', api_app)
 
 
+@app.get('/create')
+def create(db:Session = Depends(get_db)):
+    new_user = models.User(email="mail", password="1111",login_type="google")
+    db.add(new_user)
+    db.commit()
 @app.get('/')
 async def root():
     return HTMLResponse('<body><a href="/auth/login">Log In</a></body>')
