@@ -5,9 +5,9 @@ from sqlalchemy.orm import sessionmaker
 
 #SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:password@localhost:3306/db_name" # mysql
 #SQLALCHEMY_DATABASE_URL = "postgresql://root:password@localhost:3306/db_name" # postgresql
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db" # mysql
+SQLALCHEMY_DATABASE_URL = "sqlite:///./user.db" # mysql
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL) # sqlalchemy engine 생성
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}) # sqlalchemy engine 생성
 
 # 서버에서 DB에 요청을 보내기 위한 통로 역할
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

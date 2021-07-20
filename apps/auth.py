@@ -11,7 +11,7 @@ from starlette.responses import JSONResponse
 from apps.oauth.google_oauth2 import google_oauth2_app, google_get_email
 
 from apps.jwt import create_refresh_token, create_token, CREDENTIALS_EXCEPTION, decode_token, valid_email_from_db
-from apps import schema, models
+from apps.model import User
 from apps.database import SessionLocal, engine, Base, get_db
 from sqlalchemy.orm import Session
 
@@ -32,13 +32,14 @@ auth_app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 @auth_app.get('/token')
 async def auth(request: Request, db:Session = Depends(get_db)):
-    
-
-    email = await google_get_email(request)
-    new_user = models.User(email=email,login_type="google")
+    new_user = User(email="temail1",login_type="google")
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    #user = db.query(User).first()
+    #print("kkkkkkkkkkkkk"+user.email)
+    email = await google_get_email(request)
+    
     if valid_email_from_db(email):
         return JSONResponse({
             'result': True,

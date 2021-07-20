@@ -34,7 +34,6 @@ async def google_get_email(request: Request):
     try:
         access_token = await oauth.google.authorize_access_token(request)
     except OAuthError:
-        print("abc")
         raise CREDENTIALS_EXCEPTION
     user_data = await oauth.google.parse_id_token(request, access_token)
     return user_data['email']
