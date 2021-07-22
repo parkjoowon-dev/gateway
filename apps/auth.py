@@ -10,8 +10,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
 from apps.oauth.google_oauth2 import google_oauth2_app, google_get_email
 
-from apps.jwt import create_refresh_token, create_token, CREDENTIALS_EXCEPTION, decode_token, valid_email_from_db
-from apps.model import User
+from apps.jwt import create_refresh_token, create_token, CREDENTIALS_EXCEPTION, decode_token
+from apps.model.User import User
 from apps.database import SessionLocal, engine, Base, get_db
 from sqlalchemy.orm import Session
 
@@ -31,22 +31,16 @@ auth_app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 
 @auth_app.get('/token')
-async def auth(request: Request, db:Session = Depends(get_db)):
-    new_user = User(email="temail1",login_type="google")
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    #user = db.query(User).first()
-    #print("kkkkkkkkkkkkk"+user.email)
+async def auth(request: Request):
+    print("1111111")
     email = await google_get_email(request)
-    
-    if valid_email_from_db(email):
-        return JSONResponse({
-            'result': True,
-            'access_token': create_token(email),
-            'refresh_token': create_refresh_token(email),
-        })
-    raise CREDENTIALS_EXCEPTION
+    print("22222222")
+    user = User.getOrInsertUser(email)
+    return JSONResponse({
+        'result': True,
+        'access_token': create_token(user),
+        'refresh_token': create_refresh_token(user),
+    })
 
 
 @auth_app.post('/refresh')
@@ -60,11 +54,9 @@ async def refresh(request: Request):
                 payload = decode_token(token)
                 # Check if token is not expired
                 if datetime.utcfromtimestamp(payload.get('exp')) > datetime.utcnow():
-                    email = payload.get('sub')
-                    # Validate email
-                    if valid_email_from_db(email):
-                        # Create and return token
-                        return JSONResponse({'result': True, 'access_token': create_token(email)})
+                    email = payload.get('email')
+                    user = User.getUser(email)
+                    return JSONResponse({'result': True, 'access_token': create_token(user)})
 
     except Exception:
         raise CREDENTIALS_EXCEPTION

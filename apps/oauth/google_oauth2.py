@@ -33,7 +33,8 @@ oauth.register(
 async def google_get_email(request: Request):
     try:
         access_token = await oauth.google.authorize_access_token(request)
-    except OAuthError:
+    except OAuthError as e:
+        print("e = " + str(e))
         raise CREDENTIALS_EXCEPTION
     user_data = await oauth.google.parse_id_token(request, access_token)
     return user_data['email']

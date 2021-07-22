@@ -10,9 +10,43 @@ class User(Base):
     password = Column(String(100))
     login_type = Column(String(100))
 
-    def isExist(db, email):
+
+    def getOrInsertUser(email):
+        print("getOrInsertUser email = " + email)
+        user = User.getUser(email)
+        if user == None:
+            User.insertUser(email)
+            user = User.getUser(email)
+            return user
+        else:
+            return user
+
+    def insertUser(email):
+        user = User(email=email)
+        db = get_db()
+        db.add(user)
+        db.commit()
+        db.close()
+    def getUser(email):
+        db = get_db()
+        user = None
         try:
-            db.query(User).filter(User.email == email).one()
-            return True
+            user = db.query(User).filter(User.email == email).one()
         except:
-            return False
+            print("no users")
+        finally:
+            db.close()
+        return user
+
+    def isExist(email, self):
+        db = get_db()
+        result = False
+        try:
+            self.getUser(email)
+            result = True
+        except:
+            result = False
+        finally:
+            db.close()
+
+        return result

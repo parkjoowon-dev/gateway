@@ -1,7 +1,7 @@
 from fastapi import Depends
 from fastapi import FastAPI
 
-from apps.jwt import get_current_user_email
+from apps.jwt import validate_access_token
 
 api_app = FastAPI()
 
@@ -12,5 +12,5 @@ def test():
 
 
 @api_app.get('/protected')
-def test2(current_email: str = Depends(get_current_user_email)):
+def test2(current_email: str = Depends(validate_access_token)):
     return {'message': 'protected api_app endpoint'}

@@ -8,14 +8,10 @@ from fastapi.responses import JSONResponse
 from apps.api import api_app
 from apps.auth import auth_app
 
-from apps.db import add_blacklist_token
-from apps.db import init_blacklist_file
-from apps.jwt import CREDENTIALS_EXCEPTION
-from apps.jwt import get_current_user_token
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from apps.model.User import User
-from apps.database import SessionLocal, engine, Base, get_db
+from apps.database import engine, Base, get_db
 
 Base.metadata.create_all(engine)
 
@@ -31,24 +27,16 @@ def create(db:Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
 @app.get('/select')
-def select(db:Session = Depends(get_db)):
-    isExist = User.isExist(db, "mail4")
-    print(isExist)
+def select():
     
-
+    user = User.getOrInsertUser("mail1")
+    print("user.seq = " + str(user.seq))
+    return user
 @app.get('/')
 async def root():
     return HTMLResponse('<body><a href="/auth/login">Log In</a></body>')
 
 
-@app.get('/logout')
-def logout(token: str = Depends(get_current_user_token)):
-    if add_blacklist_token(token):
-        return JSONResponse({'result': True})
-    raise CREDENTIALS_EXCEPTION
-
-
-# bc128a56441dcf055d055bdda4cfbbafb35a5fcd
 @app.get('/token')
 async def token(request: Request):
     return HTMLResponse('''
@@ -124,5 +112,4 @@ async def token(request: Request):
 
 
 if __name__ == '__main__':
-    init_blacklist_file()
     uvicorn.run("main:app", host='0.0.0.0', port=3000, reload=True, debug=True)

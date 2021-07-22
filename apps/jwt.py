@@ -8,12 +8,6 @@ from fastapi import HTTPException
 from fastapi import status
 from fastapi.security import OAuth2PasswordBearer
 
-from apps.db import is_token_blacklisted
-
-# Create a fake db:
-FAKE_DB = {'zxcvbnmlpoi@gmail.com': {'name': 'Guillermo Paoletti'}}
-
-
 # Helper to read numbers using var envs
 def cast_to_number(id):
     temp = os.environ.get(id)
@@ -30,7 +24,7 @@ API_SECRET_KEY = os.environ.get('API_SECRET_KEY') or None
 if API_SECRET_KEY is None:
     raise BaseException('Missing API_SECRET_KEY env var.')
 API_ALGORITHM = os.environ.get('API_ALGORITHM') or 'HS256'
-API_ACCESS_TOKEN_EXPIRE_MINUTES = cast_to_number('API_ACCESS_TOKEN_EXPIRE_MINUTES') or 15
+API_ACCESS_TOKEN_EXPIRE_MINUTES = cast_to_number('API_ACCESS_TOKEN_EXPIRE_MINUTES') or 5
 REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30
 
 # Token url (We should later create a token url that accepts just a user and a password to use swagger)
@@ -56,44 +50,35 @@ def create_access_token(*, data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
-def create_refresh_token(email):
+def create_refresh_token(user):
     expires = timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
-    return create_access_token(data={'sub': email}, expires_delta=expires)
+    return create_access_token(data={'seq':user.seq,'email': user.email}, expires_delta=expires)
 
 
 # Create token for an email
-def create_token(email):
+def create_token(user):
     access_token_expires = timedelta(minutes=API_ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={'sub': email}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={'seq':user.seq,'email': user.email}, expires_delta=access_token_expires)
     return access_token
-
-
-def valid_email_from_db(email):
-    
-    return email in FAKE_DB
 
 
 def decode_token(token):
     return jwt.decode(token, API_SECRET_KEY, algorithms=[API_ALGORITHM])
 
 
-async def get_current_user_email(token: str = Depends(oauth2_scheme)):
-    if is_token_blacklisted(token):
-        raise CREDENTIALS_EXCEPTION
+async def validate_access_token(token: str = Depends(oauth2_scheme)):
+    print("1111111111111")
     try:
         payload = decode_token(token)
-        email: str = payload.get('sub')
+        print("222222222222")
+        email: str = payload.get('email')
+        seq: int = payload.get('seq')
+        print("email = " + email)
+        print("seq = " + str(seq))
         if email is None:
             raise CREDENTIALS_EXCEPTION
-    except jwt.PyJWTError:
+    except jwt.PyJWTError as e:
+        print(e)
         raise CREDENTIALS_EXCEPTION
+    return email
 
-    if valid_email_from_db(email):
-        return email
-
-    raise CREDENTIALS_EXCEPTION
-
-
-async def get_current_user_token(token: str = Depends(oauth2_scheme)):
-    _ = await get_current_user_email(token)
-    return token
