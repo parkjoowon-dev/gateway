@@ -67,14 +67,10 @@ def decode_token(token):
 
 
 async def validate_access_token(token: str = Depends(oauth2_scheme)):
-    print("1111111111111")
     try:
         payload = decode_token(token)
-        print("222222222222")
         email: str = payload.get('email')
         seq: int = payload.get('seq')
-        print("email = " + email)
-        print("seq = " + str(seq))
         if email is None:
             raise CREDENTIALS_EXCEPTION
     except jwt.PyJWTError as e:

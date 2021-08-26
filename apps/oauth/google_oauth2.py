@@ -7,8 +7,10 @@ from fastapi import Request
 from fastapi.responses import HTMLResponse
 
 from starlette.config import Config
-from apps.jwt import CREDENTIALS_EXCEPTION
 
+from apps.model.User import User
+from apps.jwt import create_refresh_token, create_token, CREDENTIALS_EXCEPTION, decode_token
+import json
 
 # Create the auth app
 google_oauth2_app = FastAPI()
@@ -45,6 +47,24 @@ async def login(request: Request):
     return await oauth.google.authorize_redirect(request, redirect_uri)
 @google_oauth2_app.get('/callback')
 async def token(request: Request):
+    email = await google_get_email(request)
+    user = User.getOrInsertUser(email)
+    result = {
+        'result': True,
+        'access_token': create_token(user),
+        'refresh_token': create_refresh_token(user),
+        'type' : 'token_regist'
+    }
+    return HTMLResponse('''<script>var result = 
+                   
+                '''+ json.dumps(result) + 
+                '''
+                    window.opener.postMessage(result, '*');
+                    window.close();
+                </script>
+                ''')
+@google_oauth2_app.get('/callback_t')
+async def token(request: Request):
     return HTMLResponse('''
                 <script>
                 function send(){
@@ -52,10 +72,15 @@ async def token(request: Request):
                     req.onreadystatechange = function() {
                         if (req.readyState === 4) {
                             console.log(req.response);
+                           // console.log(opener);
+                            //console.log(window.opener);
+                            window.opener.postMessage(req.response, '*');
+                            //opener.loginComplate(req.response)
                             if (req.response["result"] === true) {
                                 window.localStorage.setItem('jwt', req.response["access_token"]);
                                 window.localStorage.setItem('refresh', req.response["refresh_token"]);
                             }
+                            window.close();
                         }
                     }
                     req.withCredentials = true;
